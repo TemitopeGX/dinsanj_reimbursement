@@ -168,6 +168,10 @@ function doPost(e) {
           requireRole(user, ['Admin', 'Staff']);
           result = updateJob(user.userId, payload);
           break;
+        case 'deleteJob':
+          requireRole(user, ['Admin', 'Staff']);
+          result = deleteJob(user.userId, payload);
+          break;
         case 'createReimbursement':
           requireRole(user, ['Admin', 'Staff']);
           result = createReimbursement(user.userId, payload);
@@ -183,6 +187,10 @@ function doPost(e) {
         case 'addPayment':
           requireRole(user, ['Admin', 'Staff']);
           result = addPayment(user.userId, payload);
+          break;
+        case 'deleteReimbursement':
+          requireRole(user, ['Admin']); // Restrict to admin to be safe
+          result = deleteReimbursement(user.userId, payload);
           break;
         case 'getUsers':
           requireRole(user, ['Admin']);
@@ -406,6 +414,20 @@ function updateJob(userId, payload) {
   throw new Error("Job not found");
 }
 
+function deleteJob(userId, payload) {
+  if (!payload.id) throw new Error("Job ID required");
+  const sheet = getSheet('Jobs');
+  const data = sheet.getDataRange().getValues();
+  for (let i = 1; i < data.length; i++) {
+    if (data[i][0] === payload.id) {
+      sheet.deleteRow(i + 1);
+      logAudit(userId, 'DELETE_JOB', 'Jobs', payload.id, null, payload);
+      return { id: payload.id, message: "Job deleted successfully" };
+    }
+  }
+  throw new Error("Job not found");
+}
+
 function createReimbursement(userId, payload) {
   if (!payload.job_id || !payload.client_id || !payload.line_items || payload.line_items.length === 0) {
     throw new Error("Job, Client, and at least one Line Item required");
@@ -442,6 +464,20 @@ function updateReimbursement(userId, payload) {
       
       logAudit(userId, 'UPDATE_REIMBURSEMENT', 'Reimbursements', payload.id, null, { totalAmount });
       return { id: payload.id, message: "Reimbursement updated successfully" };
+    }
+  }
+  throw new Error("Reimbursement not found");
+}
+
+function deleteReimbursement(userId, payload) {
+  if (!payload.id) throw new Error("Reimbursement ID required");
+  const sheet = getSheet('Reimbursements');
+  const data = sheet.getDataRange().getValues();
+  for (let i = 1; i < data.length; i++) {
+    if (data[i][0] === payload.id) {
+      sheet.deleteRow(i + 1);
+      logAudit(userId, 'DELETE_REIMBURSEMENT', 'Reimbursements', payload.id, null, payload);
+      return { id: payload.id, message: "Reimbursement deleted successfully" };
     }
   }
   throw new Error("Reimbursement not found");

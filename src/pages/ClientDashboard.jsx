@@ -127,6 +127,26 @@ export default function ClientDashboard() {
     }
   };
 
+  const handleDeleteJob = async (record) => {
+    if (!window.confirm(`Are you sure you want to permanently delete Job Reference ${record.job_reference}? This action cannot be undone.`)) return;
+    
+    try {
+      setLoading(true);
+      await recordsApi.deleteReimbursement({ id: record.id });
+      try {
+        await recordsApi.deleteJob({ id: record.job_id });
+      } catch (e) {
+        console.warn("Job may already be deleted or shared:", e);
+      }
+      alert("Job deleted successfully!");
+      window.location.reload();
+    } catch (err) {
+      alert("Error deleting job: " + err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const StatusBadge = ({ status }) => {
     switch(status) {
       case 'Paid':
@@ -248,17 +268,27 @@ export default function ClientDashboard() {
                         <TableCell className="font-bold">{formatMoney(record.total_amount)}</TableCell>
                         <TableCell><StatusBadge status={record.derived_status} /></TableCell>
                         <TableCell className="text-right">
-                          <Button 
-                            variant="outline" 
-                            size="sm"
-                            onClick={() => {
-                              setSelectedJob(record);
-                              setJobForm({ job_reference: record.job_reference, internal_reference: record.internal_reference || '' });
-                              setEditJobModalOpen(true);
-                            }}
-                          >
-                            Edit Ref
-                          </Button>
+                          <div className="flex justify-end space-x-2">
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              onClick={() => {
+                                setSelectedJob(record);
+                                setJobForm({ job_reference: record.job_reference, internal_reference: record.internal_reference || '' });
+                                setEditJobModalOpen(true);
+                              }}
+                            >
+                              Edit Ref
+                            </Button>
+                            <Button 
+                              variant="ghost" 
+                              size="sm"
+                              className="text-destructive hover:bg-destructive/10"
+                              onClick={() => handleDeleteJob(record)}
+                            >
+                              Delete
+                            </Button>
+                          </div>
                         </TableCell>
                       </TableRow>
                     ))
