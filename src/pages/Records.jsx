@@ -86,14 +86,16 @@ export default function Records() {
     if (record.internal_reference) text += `Our Reference: ${record.internal_reference}\n`;
     
     text += `\nBreakdown of expenses:\n`;
+    let remainingTotal = 0;
     record.line_items.forEach(item => {
-      if(item.description && parseFloat(item.amount) > 0) {
+      if(item.description && parseFloat(item.amount) > 0 && !item.paid) {
+        remainingTotal += parseFloat(item.amount);
         text += `- ${item.description}: ${record.currency} ${parseFloat(item.amount).toLocaleString(undefined, {minimumFractionDigits: 2})}\n`;
       }
     });
     
     text += `--------------------------------------\n`;
-    text += `Total Amount Due: ${record.currency} ${parseFloat(record.total_amount).toLocaleString(undefined, {minimumFractionDigits: 2})}\n\n`;
+    text += `Total Amount Due: ${record.currency} ${remainingTotal.toLocaleString(undefined, {minimumFractionDigits: 2})}\n\n`;
     
     text += `Payment Instructions:\n`;
     text += `Kindly transfer the funds into the following account and find the attached invoices for your reference.\n\n`;
@@ -332,7 +334,16 @@ export default function Records() {
                         onChange={(e) => setEditLines(editLines.map((l, i) => i === index ? { ...l, amount: e.target.value } : l))}
                       />
                     </div>
-                    <Button type="button" variant="ghost" size="icon" className="text-destructive" onClick={() => setEditLines(editLines.filter((_, i) => i !== index))}>
+                    <div className="flex items-center pt-2 space-x-2">
+                      <input 
+                        type="checkbox" 
+                        className="w-4 h-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
+                        checked={item.paid || false}
+                        onChange={(e) => setEditLines(editLines.map((l, i) => i === index ? { ...l, paid: e.target.checked } : l))}
+                      />
+                      <label className="text-sm font-medium text-slate-700">Paid</label>
+                    </div>
+                    <Button type="button" variant="ghost" size="icon" className="text-destructive mt-1" onClick={() => setEditLines(editLines.filter((_, i) => i !== index))}>
                       <Trash2 className="w-4 h-4" />
                     </Button>
                   </div>

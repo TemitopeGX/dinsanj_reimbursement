@@ -164,6 +164,10 @@ function doPost(e) {
           requireRole(user, ['Admin', 'Staff']);
           result = createJob(user.userId, payload);
           break;
+        case 'updateJob':
+          requireRole(user, ['Admin', 'Staff']);
+          result = updateJob(user.userId, payload);
+          break;
         case 'createReimbursement':
           requireRole(user, ['Admin', 'Staff']);
           result = createReimbursement(user.userId, payload);
@@ -385,6 +389,21 @@ function createJob(userId, payload) {
   ]);
   logAudit(userId, 'CREATE_JOB', 'Jobs', id, null, payload.job_reference);
   return { id, message: "Job created successfully" };
+}
+
+function updateJob(userId, payload) {
+  if (!payload.id) throw new Error("Job ID required");
+  const sheet = getSheet('Jobs');
+  const data = sheet.getDataRange().getValues();
+  for (let i = 1; i < data.length; i++) {
+    if (data[i][0] === payload.id) {
+      if (payload.job_reference !== undefined) sheet.getRange(i + 1, 3).setValue(payload.job_reference);
+      if (payload.internal_reference !== undefined) sheet.getRange(i + 1, 4).setValue(payload.internal_reference);
+      logAudit(userId, 'UPDATE_JOB', 'Jobs', payload.id, null, payload);
+      return { id: payload.id, message: "Job updated successfully" };
+    }
+  }
+  throw new Error("Job not found");
 }
 
 function createReimbursement(userId, payload) {

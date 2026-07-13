@@ -20,6 +20,11 @@ export default function ClientDashboard() {
   // Settings Form State
   const [editForm, setEditForm] = useState({ name: '', company: '', phone: '', email: '' });
 
+  // Edit Job State
+  const [editJobModalOpen, setEditJobModalOpen] = useState(false);
+  const [selectedJob, setSelectedJob] = useState(null);
+  const [jobForm, setJobForm] = useState({ job_reference: '', internal_reference: '' });
+
   useEffect(() => {
     async function fetchData() {
       setLoading(true);
@@ -97,6 +102,26 @@ export default function ClientDashboard() {
       setClient({ ...client, ...editForm });
     } catch (err) {
       alert("Error updating client: " + err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleUpdateJob = async (e) => {
+    e.preventDefault();
+    try {
+      setLoading(true);
+      await recordsApi.updateJob({ 
+        id: selectedJob.job_id, 
+        job_reference: jobForm.job_reference, 
+        internal_reference: jobForm.internal_reference 
+      });
+      alert("Job updated successfully!");
+      setEditJobModalOpen(false);
+      // Reload page to get new job reference in all tables
+      window.location.reload();
+    } catch (err) {
+      alert("Error updating job: " + err.message);
     } finally {
       setLoading(false);
     }
@@ -209,6 +234,7 @@ export default function ClientDashboard() {
                     <TableHead>Job Reference</TableHead>
                     <TableHead>Amount Due</TableHead>
                     <TableHead>Status</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -218,9 +244,22 @@ export default function ClientDashboard() {
                     reimbursements.map((record) => (
                       <TableRow key={record.id}>
                         <TableCell>{format(new Date(record.created_at), 'MMM d, yyyy')}</TableCell>
-                        <TableCell className="font-medium">{record.job_reference}</TableCell>
+                        <TableCell className="font-medium">{record.job_reference} {record.internal_reference && <span className="text-muted-foreground text-xs ml-1">({record.internal_reference})</span>}</TableCell>
                         <TableCell className="font-bold">{formatMoney(record.total_amount)}</TableCell>
                         <TableCell><StatusBadge status={record.derived_status} /></TableCell>
+                        <TableCell className="text-right">
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => {
+                              setSelectedJob(record);
+                              setJobForm({ job_reference: record.job_reference, internal_reference: record.internal_reference || '' });
+                              setEditJobModalOpen(true);
+                            }}
+                          >
+                            Edit Ref
+                          </Button>
+                        </TableCell>
                       </TableRow>
                     ))
                   )}
@@ -263,6 +302,34 @@ export default function ClientDashboard() {
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* Edit Job Modal */}
+      {editJobModalOpen && selectedJob && (
+        <div className="fixed inset-0 bg-slate-900/50 flex items-center justify-center z-50">
+          <Card className="w-[450px]">
+            <form onSubmit={handleUpdateJob}>
+              <CardHeader>
+                <CardTitle>Edit Job Reference</CardTitle>
+                <CardDescription>Update the display identifiers for this job.</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Job Reference</label>
+                  <Input required value={jobForm.job_reference} onChange={e => setJobForm({...jobForm, job_reference: e.target.value})} />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Internal Reference (Optional)</label>
+                  <Input value={jobForm.internal_reference} onChange={e => setJobForm({...jobForm, internal_reference: e.target.value})} />
+                </div>
+                <div className="flex justify-end space-x-2 pt-4">
+                  <Button variant="outline" type="button" onClick={() => setEditJobModalOpen(false)}>Cancel</Button>
+                  <Button type="submit">Save Changes</Button>
+                </div>
+              </CardContent>
+            </form>
+          </Card>
+        </div>
+      )}
     </div>
   );
 }

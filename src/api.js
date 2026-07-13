@@ -35,6 +35,7 @@ export const recordsApi = {
   getReimbursements: () => apiCall('getReimbursements'),
   createClient: (data) => apiCall('createClient', data),
   createJob: (data) => apiCall('createJob', data),
+  updateJob: (data) => apiCall('updateJob', data),
   createReimbursement: (data) => apiCall('createReimbursement', data),
   addPayment: (payload) => apiCall('addPayment', payload),
   updateClient: (payload) => apiCall('updateClient', payload),
