@@ -6,7 +6,7 @@ import { Input } from '../components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../components/ui/table';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '../components/ui/tabs';
-import { Search, Mail, CheckCircle, Clock, Copy, ExternalLink, Edit, Plus, Trash2, Banknote } from 'lucide-react';
+import { Search, Mail, CheckCircle, Clock, Copy, ExternalLink, Edit, Plus, Trash2, Banknote, Printer } from 'lucide-react';
 import { format } from 'date-fns';
 
 export default function Records() {
@@ -226,7 +226,7 @@ export default function Records() {
 
   return (
     <div className="space-y-4">
-      <div className="flex justify-between items-center">
+      <div className="flex justify-between items-center print:hidden">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Invoice Management</h1>
           <p className="text-muted-foreground mt-1">Manage all pending and paid invoices.</p>
@@ -244,13 +244,18 @@ export default function Records() {
         </div>
       </div>
 
-      <Tabs defaultValue="pending" className="w-full">
+      <Tabs defaultValue="pending" className="w-full print:hidden">
         <TabsList className="mb-4">
           <TabsTrigger value="pending">Pending / Partial ({pendingRecords.length})</TabsTrigger>
           <TabsTrigger value="paid">Fully Paid ({paidRecords.length})</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="pending">
+        <TabsContent value="pending" className="space-y-4">
+          <div className="flex justify-end">
+            <Button variant="outline" onClick={() => window.print()}>
+              <Printer className="w-4 h-4 mr-2" /> Print Outstanding Report
+            </Button>
+          </div>
           <Card><RecordTable data={pendingRecords} /></Card>
         </TabsContent>
 
@@ -405,6 +410,66 @@ export default function Records() {
           </Card>
         </div>
       )}
+
+      {/* PRINT VIEW - Only visible when printing */}
+      <div className="hidden print:block p-8 space-y-6">
+        <div className="text-center pb-6 border-b-2 border-slate-900">
+          <h1 className="text-3xl font-bold uppercase tracking-wider">{settings.company_name || 'COMPANY'}</h1>
+          <h2 className="text-xl text-slate-600 mt-2">Outstanding Payments Report</h2>
+          <p className="text-sm text-slate-500 mt-1">Generated: {format(new Date(), 'MMMM d, yyyy')}</p>
+        </div>
+
+        <table className="w-full text-left text-sm border-collapse">
+          <thead>
+            <tr className="border-b-2 border-slate-900 bg-slate-50">
+              <th className="py-3 px-2 font-bold uppercase">Date</th>
+              <th className="py-3 px-2 font-bold uppercase">Job / Client</th>
+              <th className="py-3 px-2 font-bold uppercase text-right">Amount Due</th>
+              <th className="py-3 px-2 font-bold uppercase text-right">Outstanding</th>
+              <th className="py-3 px-4 font-bold uppercase text-center w-24">Verified</th>
+            </tr>
+          </thead>
+          <tbody>
+            {pendingRecords.map((record) => {
+              const outstanding = parseFloat(record.total_amount) - parseFloat(record.amount_paid);
+              return (
+                <tr key={record.id} className="border-b border-slate-300">
+                  <td className="py-4 px-2 whitespace-nowrap">{format(new Date(record.created_at), 'MMM d, yy')}</td>
+                  <td className="py-4 px-2">
+                    <div className="font-bold">{record.job_reference} {record.internal_reference && `(${record.internal_reference})`}</div>
+                    <div className="text-slate-600">{record.client_name}</div>
+                  </td>
+                  <td className="py-4 px-2 text-right">
+                    {record.currency} {parseFloat(record.total_amount).toLocaleString(undefined, {minimumFractionDigits: 2})}
+                  </td>
+                  <td className="py-4 px-2 text-right font-bold">
+                    {record.currency} {outstanding.toLocaleString(undefined, {minimumFractionDigits: 2})}
+                  </td>
+                  <td className="py-4 px-4 text-center">
+                    <div className="w-6 h-6 border-2 border-slate-400 mx-auto rounded-sm"></div>
+                  </td>
+                </tr>
+              );
+            })}
+            {pendingRecords.length === 0 && (
+              <tr>
+                <td colSpan={5} className="py-8 text-center text-slate-500 italic">No outstanding payments to report.</td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+
+        <div className="mt-16 pt-8 border-t border-slate-300 flex justify-between text-sm">
+          <div>
+            <p className="font-bold">Total Outstanding Records: {pendingRecords.length}</p>
+          </div>
+          <div className="space-y-4">
+            <p>Reviewed By: ___________________________</p>
+            <p>Date: ___________________________</p>
+          </div>
+        </div>
+      </div>
+
     </div>
   );
 }

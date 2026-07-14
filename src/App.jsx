@@ -18,8 +18,8 @@ function PrivateLayout() {
   }
 
   return (
-    <div className="flex h-screen w-full bg-slate-50 overflow-hidden text-slate-900">
-      <aside className="w-64 bg-white border-r border-slate-200 flex flex-col">
+    <div className="flex h-screen w-full bg-slate-50 overflow-hidden text-slate-900 print:h-auto print:overflow-visible print:bg-white">
+      <aside className="w-64 bg-white border-r border-slate-200 flex flex-col print:hidden">
         <div className="h-16 flex items-center px-6 border-b border-slate-200">
           <h1 className="font-bold text-xl text-primary">DINSANJ Portal</h1>
         </div>
@@ -54,8 +54,8 @@ function PrivateLayout() {
         </div>
       </aside>
       
-      <main className="flex-1 overflow-y-auto p-8">
-        <div className="mx-auto max-w-6xl">
+      <main className="flex-1 overflow-y-auto p-8 print:overflow-visible print:p-0">
+        <div className="mx-auto max-w-6xl print:max-w-none print:mx-0">
           <Outlet />
         </div>
       </main>
