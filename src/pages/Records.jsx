@@ -453,15 +453,16 @@ export default function Records() {
                     </div>
                   </div>
                   
-                  <div className="space-y-2 mt-2">
+                  <div className="space-y-1 mt-2">
                     {unpaidLines.map((line, idx) => (
-                      <div key={idx} className="flex justify-between items-center text-sm pl-2">
+                      <div key={idx} className="flex items-end text-sm pl-2 pt-1">
                         <div className="flex items-center space-x-3">
-                          <div className="w-5 h-5 border-2 border-slate-400 rounded-sm"></div>
+                          <div className="w-4 h-4 border-2 border-slate-400 rounded-sm flex-shrink-0"></div>
                           <span className="font-medium text-slate-700 uppercase tracking-wide">{line.description}</span>
                         </div>
-                        <span className="font-medium text-slate-700">
-                          ...................................... {record.currency} {parseFloat(line.amount).toLocaleString(undefined, {minimumFractionDigits: 2})}
+                        <div className="flex-1 border-b-2 border-dotted border-slate-300 mb-1 mx-4"></div>
+                        <span className="font-medium text-slate-900 whitespace-nowrap text-right min-w-[120px]">
+                          {record.currency} {parseFloat(line.amount).toLocaleString(undefined, {minimumFractionDigits: 2})}
                         </span>
                       </div>
                     ))}
