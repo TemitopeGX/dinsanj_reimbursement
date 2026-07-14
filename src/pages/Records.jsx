@@ -137,6 +137,20 @@ export default function Records() {
   const pendingRecords = filteredRecords.filter(r => r.derived_status !== 'Paid');
   const paidRecords = filteredRecords.filter(r => r.derived_status === 'Paid');
 
+  // Group for print view
+  const groupedByClient = useMemo(() => {
+    const groups = {};
+    pendingRecords.forEach(r => {
+      if (!groups[r.client_name]) groups[r.client_name] = [];
+      groups[r.client_name].push(r);
+    });
+    // Sort clients alphabetically
+    return Object.keys(groups).sort().map(clientName => ({
+      clientName,
+      records: groups[clientName]
+    }));
+  }, [pendingRecords]);
+
   const RecordTable = ({ data }) => (
     <CardContent className="p-0">
       <Table>
@@ -419,45 +433,48 @@ export default function Records() {
           <p className="text-sm text-slate-500 mt-1">Generated: {format(new Date(), 'MMMM d, yyyy')}</p>
         </div>
 
-        <table className="w-full text-left text-sm border-collapse">
-          <thead>
-            <tr className="border-b-2 border-slate-900 bg-slate-50">
-              <th className="py-3 px-2 font-bold uppercase">Date</th>
-              <th className="py-3 px-2 font-bold uppercase">Job / Client</th>
-              <th className="py-3 px-2 font-bold uppercase text-right">Amount Due</th>
-              <th className="py-3 px-2 font-bold uppercase text-right">Outstanding</th>
-              <th className="py-3 px-4 font-bold uppercase text-center w-24">Verified</th>
-            </tr>
-          </thead>
-          <tbody>
-            {pendingRecords.map((record) => {
+        {groupedByClient.map(group => (
+          <div key={group.clientName} className="mb-10 page-break-inside-avoid">
+            <h3 className="text-xl font-bold bg-slate-200 p-2 mb-4 border border-slate-300">{group.clientName}</h3>
+            
+            {group.records.map(record => {
               const outstanding = parseFloat(record.total_amount) - parseFloat(record.amount_paid);
+              const unpaidLines = record.line_items.filter(item => item.description && parseFloat(item.amount) > 0 && !item.paid);
+              
               return (
-                <tr key={record.id} className="border-b border-slate-300">
-                  <td className="py-4 px-2 whitespace-nowrap">{format(new Date(record.created_at), 'MMM d, yy')}</td>
-                  <td className="py-4 px-2">
-                    <div className="font-bold">{record.job_reference} {record.internal_reference && `(${record.internal_reference})`}</div>
-                    <div className="text-slate-600">{record.client_name}</div>
-                  </td>
-                  <td className="py-4 px-2 text-right">
-                    {record.currency} {parseFloat(record.total_amount).toLocaleString(undefined, {minimumFractionDigits: 2})}
-                  </td>
-                  <td className="py-4 px-2 text-right font-bold">
-                    {record.currency} {outstanding.toLocaleString(undefined, {minimumFractionDigits: 2})}
-                  </td>
-                  <td className="py-4 px-4 text-center">
-                    <div className="w-6 h-6 border-2 border-slate-400 mx-auto rounded-sm"></div>
-                  </td>
-                </tr>
+                <div key={record.id} className="mb-6 ml-4 border-l-2 border-slate-300 pl-4">
+                  <div className="flex justify-between items-center mb-2 pb-1 border-b border-slate-200">
+                    <div className="font-bold text-lg">
+                      <span className="text-slate-500 mr-2">{format(new Date(record.created_at), 'MMM d, yy')}</span>
+                      {record.job_reference} {record.internal_reference && <span className="text-slate-500 font-normal ml-1">({record.internal_reference})</span>}
+                    </div>
+                    <div className="font-bold text-lg text-slate-800 bg-slate-100 px-3 py-1 rounded">
+                      Outstanding: {record.currency} {outstanding.toLocaleString(undefined, {minimumFractionDigits: 2})}
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-2 mt-2">
+                    {unpaidLines.map((line, idx) => (
+                      <div key={idx} className="flex justify-between items-center text-sm pl-2">
+                        <div className="flex items-center space-x-3">
+                          <div className="w-5 h-5 border-2 border-slate-400 rounded-sm"></div>
+                          <span className="font-medium text-slate-700 uppercase tracking-wide">{line.description}</span>
+                        </div>
+                        <span className="font-medium text-slate-700">
+                          ...................................... {record.currency} {parseFloat(line.amount).toLocaleString(undefined, {minimumFractionDigits: 2})}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
               );
             })}
-            {pendingRecords.length === 0 && (
-              <tr>
-                <td colSpan={5} className="py-8 text-center text-slate-500 italic">No outstanding payments to report.</td>
-              </tr>
-            )}
-          </tbody>
-        </table>
+          </div>
+        ))}
+        
+        {groupedByClient.length === 0 && (
+          <div className="py-8 text-center text-slate-500 italic">No outstanding payments to report.</div>
+        )}
 
         <div className="mt-16 pt-8 border-t border-slate-300 flex justify-between text-sm">
           <div>
